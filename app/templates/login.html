@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<h1 class="logo-text">
+    Hello<span>    </span>
+</h1>
+
+{# --- Flash Messages --- #}
+{# Displays security feedback (errors, warnings, info) without leaking sensitive details. #}
+{# Messages are styled to match Xero's design language. #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages" role="alert">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}" aria-live="assertive">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endwith %}
+
+<form class="login-form" action="{{ url_for('auth.login') }}" method="POST" novalidate>
+    {# CSRF token — invisible to the user, validated by flask-wtf on POST. #}
+    {{ form.hidden_tag() }}
+
+    <div class="input-group">
+        <label for="email">Email address</label>
+        <input type="email"
+               id="email"
+               name="email"
+               required
+               placeholder="e.g., jane.doe@example.com"
+               value="{{ form.email.data or '' }}"
+               autofocus
+               autocomplete="email"
+               maxlength="254"
+               {% if form.email.errors %}class="input-error" aria-describedby="email-error"{% endif %}>
+        {% if form.email.errors %}
+        <div id="email-error" class="field-error" role="alert">
+            {{ form.email.errors[0] }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password"
+               id="password"
+               name="password"
+               required
+               placeholder="Enter your password"
+               autocomplete="current-password"
+               maxlength="128"
+               {% if form.password.errors %}class="input-error" aria-describedby="password-error"{% endif %}>
+        {% if form.password.errors %}
+        <div id="password-error" class="field-error" role="alert">
+            {{ form.password.errors[0] }}
+        </div>
+        {% endif %}
+    </div>
+
+    <button type="submit" class="login-button">
+        Login
+    </button>
+</form>
+{% endblock %}
