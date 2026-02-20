@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+instance/
+flask_sessions/
+.pytest_cache/
+venv/
+.env
+*.db
+.DS_Store
+__MACOSX/
+htmlcov/
+.coverage
+.claude/
+nul

@@ -1,0 +1,62 @@
+# =============================================================================
+# .dockerignore — Exclude from Docker build context
+#
+# Keeps the image minimal and prevents sensitive files from leaking
+# into the container. Only app/, run.py, wsgi.py, gunicorn.conf.py,
+# and requirements.txt are included.
+# =============================================================================
+
+# --- Version Control ---
+.git
+.gitignore
+
+# --- Python Artifacts ---
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+venv/
+.venv/
+
+# --- Test and Development Files ---
+tests/
+verify.py
+security_test.py
+htmlcov/
+.coverage
+
+# --- Documentation (not needed at runtime) ---
+docs/
+*.md
+!requirements.txt
+
+# --- Environment and Secrets ---
+.env
+*.env
+instance/
+*.db
+
+# --- Original Challenge Files (not needed at runtime) ---
+index.html
+styles.css
+
+# --- IDE and Editor Config ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Docker Files (prevent recursive builds) ---
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# --- OS Artifacts ---
+.DS_Store
+__MACOSX/
+Thumbs.db
+nul
+
+# --- Claude CLI ---
+.claude/

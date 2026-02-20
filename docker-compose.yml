@@ -1,0 +1,99 @@
+# =============================================================================
+# Docker Compose — Production Deployment (Security Hardened)
+#
+# Usage:
+#   # Generate a secret key first:
+#   export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+#
+#   # Start the application:
+#   docker-compose up -d
+#
+#   # View logs:
+#   docker-compose logs -f
+#
+#   # Stop:
+#   docker-compose down
+# =============================================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: secure-login-portal
+
+    # --- Port Mapping ---
+    # Map container port 8000 to host port 5000.
+    # In production, an nginx reverse proxy would sit in front.
+    ports:
+      - "5000:8000"
+
+    # --- Environment ---
+    environment:
+      # REQUIRED: 256-bit secret key for session signing and CSRF tokens.
+      # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY environment variable is required}
+
+      # Gunicorn settings (override defaults from gunicorn.conf.py).
+      - LOG_LEVEL=info
+
+      # Trust X-Forwarded-* from Docker's internal network.
+      - FORWARDED_ALLOW_IPS=*
+
+    # --- Security: Read-Only Root Filesystem ---
+    # The application code cannot be modified at runtime.
+    # Prevents: malware writing to disk, webshell upload, config tampering.
+    read_only: true
+
+    # --- Security: Writable tmpfs Mounts ---
+    # Only these directories are writable (in-memory, not persisted).
+    tmpfs:
+      # /tmp: General temp files (Python, gunicorn)
+      - /tmp:size=10M,noexec,nosuid,nodev
+      # Instance folder: SQLite database and flask-session files
+      - /app/instance:size=50M,noexec,nosuid,nodev
+
+    # --- Security: Drop All Capabilities ---
+    # Linux capabilities are fine-grained root privileges.
+    # We drop ALL and don't add any back — the app needs none.
+    cap_drop:
+      - ALL
+
+    # --- Security: No Privilege Escalation ---
+    # Prevents the process from gaining new privileges via setuid/setgid.
+    security_opt:
+      - no-new-privileges:true
+
+    # --- Resource Limits ---
+    # Prevents DoS via resource exhaustion.
+    deploy:
+      resources:
+        limits:
+          memory: 256M     # Max memory (OOM-kill if exceeded)
+          cpus: "1.0"      # Max 1 CPU core
+        reservations:
+          memory: 128M     # Guaranteed minimum memory
+          cpus: "0.25"     # Guaranteed minimum CPU
+
+    # --- Health Check ---
+    # Overrides the Dockerfile HEALTHCHECK with compose-specific settings.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/login')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+    # --- Restart Policy ---
+    # Always restart unless explicitly stopped.
+    # Handles: OOM kills, uncaught exceptions, worker crashes.
+    restart: unless-stopped
+
+    # --- Logging ---
+    # Limit log file size to prevent disk exhaustion.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"    # Max 10MB per log file
+        max-file: "3"      # Keep 3 rotated files (30MB total)
